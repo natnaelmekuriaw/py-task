@@ -19,13 +19,29 @@ def _write_new(path: Path, content: str) -> None:
 
 
 def write_reports(report: BenchmarkReport, directory: Path) -> Path:
-    name = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex
-    output = directory / name
-    output.mkdir(parents=True, exist_ok=False)
-    for filename, content in (
+    documents = (
         ("results.json", render_json(report)),
         ("results.csv", render_csv(report)),
         ("results.md", render_markdown(report)),
-    ):
-        _write_new(output / filename, content)
+    )
+    name = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex
+    output = directory / name
+    output.mkdir(parents=True, exist_ok=False)
+    written: list[Path] = []
+    try:
+        for filename, content in documents:
+            path = output / filename
+            _write_new(path, content)
+            written.append(path)
+    except BaseException:
+        for path in written:
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        try:
+            output.rmdir()
+        except OSError:
+            pass
+        raise
     return output
