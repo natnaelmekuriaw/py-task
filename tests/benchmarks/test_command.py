@@ -42,12 +42,35 @@ def test_invalid_options_fail_before_creating_an_engine(configured, capsys):
     assert "configuration failed" in capsys.readouterr().err
 
 
-def test_output_failure_returns_a_safe_message(monkeypatch, configured, capsys):
+def test_output_failure_returns_a_safe_message(
+    tmp_path, monkeypatch, configured, capsys
+):
     def denied(*_):
         raise PermissionError("private filesystem path")
 
     monkeypatch.setattr(command, "write_reports", denied)
-    assert command.main([]) == 1
+    assert command.main(["--output", str(tmp_path)]) == 1
     output = capsys.readouterr()
     assert output.out == ""
     assert "private filesystem path" not in output.err
+
+
+def test_unwritable_output_stops_before_running_tasks(
+    tmp_path, monkeypatch, configured, capsys
+):
+    def denied(*args, **kwargs):
+        raise PermissionError("private directory")
+
+    monkeypatch.setattr(command, "TemporaryFile", denied)
+    assert command.main(["--output", str(tmp_path)]) == 1
+    configured.assert_not_called()
+    assert "not writable" in capsys.readouterr().err
+    assert not list(tmp_path.iterdir())
+
+
+def test_output_cannot_be_an_existing_file(tmp_path, configured, capsys):
+    target = tmp_path / "report"
+    target.write_text("keep this", encoding="utf-8")
+    assert command.main(["--output", str(target)]) == 1
+    configured.assert_not_called()
+    assert target.read_text() == "keep this"

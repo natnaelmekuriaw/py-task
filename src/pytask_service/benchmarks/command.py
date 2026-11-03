@@ -1,6 +1,7 @@
 import json
 import sys
 from collections.abc import Sequence
+from tempfile import TemporaryFile
 
 from pytask_service.benchmarks.arguments import parser, read_options
 from pytask_service.benchmarks.artifacts import write_reports
@@ -18,6 +19,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ValueError as error:
         print(f"Benchmark configuration failed: {error}", file=sys.stderr)
         return 2
+    try:
+        args.output.mkdir(parents=True, exist_ok=True)
+        with TemporaryFile(dir=args.output) as probe:
+            probe.write(b"pytask")
+            probe.flush()
+    except OSError:
+        print(
+            "Benchmark output directory is unavailable or not writable.",
+            file=sys.stderr,
+        )
+        return 1
     cases = len(plan_cases(options))
     recovery = "enabled" if options.recovery else "disabled"
     print(
