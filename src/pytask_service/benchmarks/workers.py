@@ -74,6 +74,16 @@ class WorkerGroup:
             raise BenchmarkFailure("worker_exited")
 
     def stop(self) -> bool:
+        try:
+            return self._stop()
+        except BenchmarkFailure:
+            raise
+        except BaseException:
+            raise BenchmarkFailure(
+                "worker_cleanup_failed", retained_schema=self.schema
+            ) from None
+
+    def _stop(self) -> bool:
         self.stopped.set()
         deadline = Deadline(self.shutdown_timeout)
         for process in self.processes:
