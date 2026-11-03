@@ -1,4 +1,5 @@
 from dataclasses import replace
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -32,6 +33,9 @@ def test_successful_suite_preserves_case_order_and_disposes_engine(
     report = suite.run_suite(Settings("unused"), options, progress=messages.append)
     assert report.valid
     assert report.environment.postgres == "17.0"
+    assert datetime.fromisoformat(report.finished_at) >= datetime.fromisoformat(
+        report.started_at
+    )
     assert len(messages) == run.call_count == 1
     recovery.assert_not_called()
     engine.dispose.assert_called_once()

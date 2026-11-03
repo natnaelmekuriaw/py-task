@@ -32,6 +32,16 @@ def run_suite(
     *,
     progress: Callable[[str], None],
 ) -> BenchmarkReport:
+    report = _run_suite(settings, options, progress=progress)
+    return replace(report, finished_at=datetime.now(UTC).isoformat())
+
+
+def _run_suite(
+    settings: Settings,
+    options: BenchmarkOptions,
+    *,
+    progress: Callable[[str], None],
+) -> BenchmarkReport:
     revision, dirty = source_revision()
     environment = replace(host_environment(), revision=revision, tracked_changes=dirty)
     report = BenchmarkReport(options, environment, datetime.now(UTC).isoformat())

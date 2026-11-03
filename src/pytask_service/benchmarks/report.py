@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 
 from pytask_service.benchmarks.cases import plan_cases
@@ -16,6 +16,7 @@ class BenchmarkReport:
     results: tuple[CaseResult, ...] = ()
     recovery: RecoveryResult | None = None
     error_code: str | None = None
+    finished_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @property
     def valid(self) -> bool:
@@ -34,7 +35,7 @@ class BenchmarkReport:
             "schema_version": 1,
             "valid": self.valid,
             "started_at": self.started_at,
-            "finished_at": datetime.now(UTC).isoformat(),
+            "finished_at": self.finished_at,
             "options": asdict(self.options),
             "environment": asdict(self.environment),
             "planned_cases": len(plan_cases(self.options)),

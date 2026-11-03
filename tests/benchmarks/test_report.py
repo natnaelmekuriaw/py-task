@@ -26,3 +26,13 @@ def test_document_declares_units_and_measurement_boundaries(report):
     assert document["measurement"]["timing_unit"] == "seconds"
     assert document["measurement"]["worker_start_method"] == "spawn"
     assert "first submission" in document["measurement"]["elapsed_boundary"]
+
+
+def test_finished_timestamp_does_not_change_when_rendering_again(report, monkeypatch):
+    from unittest.mock import MagicMock
+
+    clock = MagicMock()
+    clock.now.side_effect = AssertionError("rendering must not change the end time")
+    monkeypatch.setattr("pytask_service.benchmarks.report.datetime", clock)
+    assert report.document()["finished_at"] == report.finished_at
+    assert report.document()["finished_at"] == report.finished_at
