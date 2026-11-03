@@ -4,6 +4,10 @@ The verification script stops at the first failure. Read the last named
 step before rerunning it. API and worker containers can remain stopped
 after a failed check; successful completion leaves them running.
 
+Invalid worker selections, oversized task plans and blank output paths are
+rejected before the verification script runs any Docker commands. The benchmark
+module also checks output-directory access before starting the measured suite.
+
 ## Slow runs
 
 The command includes image building, migrations, all tests and hundreds of
@@ -32,6 +36,7 @@ within the observed repetition range do not establish an improvement.
 | `invalid_attempt_history` | Unexpected retry, duplicate observation or missing attempt |
 | `forced_worker_shutdown` | A worker exceeded the graceful shutdown budget |
 | `workers_still_running` | A process could not be reaped; its schema is retained |
+| `worker_cleanup_failed` | Process cleanup failed or was interrupted; its schema is retained |
 | `schema_cleanup_failed` | Permissions, locks or lost database connectivity |
 | `victim_failed_before_claim` | Victim startup or database claim failure |
 | `victim_did_not_crash` | Missing expected exit code 7 or a victim still running |
