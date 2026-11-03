@@ -74,3 +74,16 @@ def test_output_cannot_be_an_existing_file(tmp_path, configured, capsys):
     assert command.main(["--output", str(target)]) == 1
     configured.assert_not_called()
     assert target.read_text() == "keep this"
+
+
+def test_failed_cases_are_counted_as_attempted_instead_of_completed(
+    tmp_path, configured, report, capsys
+):
+    failed = replace(report.results[0], metrics=None, error_code="worker_exited")
+    configured.return_value = replace(
+        report, results=(failed,), error_code="case_failed"
+    )
+    assert command.main(["--output", str(tmp_path)]) == 1
+    output = json.loads(capsys.readouterr().out)
+    assert output["attempted_cases"] == 1
+    assert output["completed_cases"] == 0

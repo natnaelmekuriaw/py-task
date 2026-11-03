@@ -55,7 +55,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         json.dumps(
             {
                 "valid": report.valid,
-                "completed_cases": len(report.results),
+                "attempted_cases": len(report.results),
+                "completed_cases": sum(result.valid for result in report.results),
                 "report_directory": str(output),
                 "error_code": report.error_code,
             }
