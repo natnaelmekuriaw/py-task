@@ -184,6 +184,21 @@ try {
         $options.BenchmarkTimeoutSeconds = 90
         $options.BenchmarkOutput = 'reports with spaces'
     }
+    switch ($env:VERIFY_BAD_BENCHMARK) {
+        'workers' {
+            $options.Benchmarks = $true
+            $options.BenchmarkWorkers = @(1, 1)
+        }
+        'budget' {
+            $options.Benchmarks = $true
+            $options.BenchmarkTasks = 10000
+            $options.BenchmarkRepeat = 10
+        }
+        'output' {
+            $options.Benchmarks = $true
+            $options.BenchmarkOutput = ' '
+        }
+    }
     Invoke-LocalVerification @options
 } catch { $failure = $_.Exception.Message }
 [pscustomobject]@{
@@ -285,6 +300,25 @@ def test_benchmarks_run_after_tests_and_before_runtime_startup(shell, tmp_path):
         "--output",
         "reports with spaces",
     ]
+    assert state["restored"] is True
+
+
+@pytest.mark.parametrize("shell", SHELLS)
+@pytest.mark.parametrize(
+    "invalid,reason",
+    [
+        ("workers", "distinct counts"),
+        ("budget", "100000"),
+        ("output", "cannot be blank"),
+    ],
+)
+def test_invalid_benchmark_plan_stops_before_any_commands(
+    shell, tmp_path, invalid, reason
+):
+    state = run_flow(shell, workspace(tmp_path), VERIFY_BAD_BENCHMARK=invalid)
+    assert reason in state["failure"]
+    assert not state["calls"]
+    assert not state["requests"]
     assert state["restored"] is True
 
 
