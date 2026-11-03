@@ -36,6 +36,7 @@ class WorkerGroup:
         try:
             signals = []
             for index in range(self.count):
+                deadline.check()
                 ready = self.context.Event()
                 process = self.context.Process(  # type: ignore[attr-defined]
                     target=worker_main,
@@ -59,6 +60,7 @@ class WorkerGroup:
                     deadline.check()
                     self.ensure_alive()
                     ready.wait(min(0.05, deadline.remaining))
+            deadline.check()
             self.ensure_alive()
             return self
         except BaseException:
