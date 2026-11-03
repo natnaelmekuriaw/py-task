@@ -46,3 +46,16 @@ def test_unstoppable_victim_retains_its_schema(process_setup):
         victim.crash_worker(Settings("unused"), SCHEMA, 1)
     assert caught.value.retained_schema == SCHEMA
     process.close.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "error", [OSError("private process detail"), KeyboardInterrupt()]
+)
+def test_unexpected_victim_cleanup_failure_preserves_schema(process_setup, error):
+    _, process, _, stop = process_setup
+    stop.side_effect = error
+    with pytest.raises(RuntimeError, match="worker_cleanup_failed") as caught:
+        victim.crash_worker(Settings("unused"), SCHEMA, 1)
+    assert caught.value.retained_schema == SCHEMA
+    assert "private process detail" not in str(caught.value)
+    process.close.assert_not_called()
