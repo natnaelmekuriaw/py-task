@@ -75,3 +75,25 @@ def test_empty_or_dead_worker_groups_fail_liveness_checks():
     with pytest.raises(RuntimeError, match="worker_exited"):
         group.ensure_alive()
     group.stop()
+
+
+def test_startup_budget_is_checked_even_when_ready_is_already_set(monkeypatch):
+    from pytask_service.benchmarks.deadline import Deadline
+
+    now = [0.0]
+    monkeypatch.setattr(
+        "pytask_service.benchmarks.workers.Deadline",
+        lambda seconds: Deadline(seconds, clock=lambda: now[0]),
+    )
+    group, context, processes = make_group()
+    original = context.Process.side_effect
+
+    def factory(**kwargs):
+        process = original(**kwargs)
+        process.start.side_effect = lambda: now.__setitem__(0, 2.0)
+        return process
+
+    context.Process.side_effect = factory
+    with pytest.raises(RuntimeError, match="deadline_exceeded"):
+        group.__enter__()
+    processes[0].close.assert_called_once()

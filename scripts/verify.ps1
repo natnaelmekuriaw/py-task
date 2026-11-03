@@ -122,6 +122,28 @@ function Invoke-LocalVerification {
     Set-StrictMode -Version Latest
     $ErrorActionPreference = 'Stop'
     $PSNativeCommandUseErrorActionPreference = $false
+    if ($Benchmarks) {
+        if ($null -eq $BenchmarkWorkers -or $BenchmarkWorkers.Count -lt 1 -or
+            $BenchmarkWorkers.Count -gt 8 -or
+            @($BenchmarkWorkers | Select-Object -Unique).Count -ne $BenchmarkWorkers.Count -or
+            @($BenchmarkWorkers | Where-Object { $_ -lt 1 -or $_ -gt 32 }).Count -gt 0) {
+            throw 'Benchmark workers must contain 1 to 8 distinct counts from 1 to 32.'
+        }
+        if ($BenchmarkTasks -lt 1 -or $BenchmarkTasks -gt 10000 -or
+            $BenchmarkRepeat -lt 1 -or $BenchmarkRepeat -gt 10 -or
+            $BenchmarkWarmup -lt 0 -or $BenchmarkWarmup -gt 1000 -or
+            $BenchmarkTimeoutSeconds -lt 5 -or $BenchmarkTimeoutSeconds -gt 3600) {
+            throw 'Benchmark settings are outside the supported ranges.'
+        }
+        $plannedTasks = ([long]$BenchmarkTasks + $BenchmarkWarmup) *
+            $BenchmarkRepeat * $BenchmarkWorkers.Count * 3
+        if ($plannedTasks -gt 100000) {
+            throw 'Benchmark plan exceeds 100000 total tasks including warmup.'
+        }
+        if ([string]::IsNullOrWhiteSpace($BenchmarkOutput)) {
+            throw 'Benchmark output directory cannot be blank.'
+        }
+    }
     $savedEnvironment = @{}
     foreach ($name in @(
         'PYTASK_DATABASE_URL', 'PYTASK_DATABASE_URL_FILE', 'PYTASK_API_KEYS_SECRET_FILE',

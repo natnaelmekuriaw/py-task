@@ -67,4 +67,8 @@ def crash_worker(settings: Settings, schema: str, timeout: float) -> None:
                 raise BenchmarkFailure(
                     "workers_still_running", retained_schema=schema
                 ) from None
+            except BaseException:
+                raise BenchmarkFailure(
+                    "worker_cleanup_failed", retained_schema=schema
+                ) from None
         process.close()

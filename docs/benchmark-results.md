@@ -4,6 +4,10 @@ Every invocation writes a unique UTC timestamp and random identifier
 directory containing `results.json`, `results.csv` and `results.md`.
 Files use exclusive creation and never replace an earlier run.
 The command returns nonzero for failed, interrupted or unsaved reports.
+Output access is checked before benchmark execution. If a later file write
+fails, the writer removes the files it created for that run. A cleanup failure
+can still leave incomplete artifacts; an unsuccessful command is never a
+complete report set.
 
 ## JSON contract
 
@@ -20,6 +24,11 @@ Schema version 1 includes:
   separate recovery result.
 - Timing boundaries, percentile method, process start method, pool settings,
   lease settings and service event log level.
+
+The finish timestamp is captured after suite cleanup and stays the same when
+the report is rendered again. The command's final stdout summary distinguishes
+`attempted_cases` from successfully `completed_cases`; a failed case only
+increments the former.
 
 The report excludes database URLs, API tokens, task arguments, task results,
 hostnames, SQL and raw exception messages. Review platform and revision

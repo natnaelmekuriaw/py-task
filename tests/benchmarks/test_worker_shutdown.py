@@ -55,3 +55,17 @@ def test_unstoppable_worker_keeps_its_handle_and_schema(monkeypatch):
     assert caught.value.retained_schema == SCHEMA
     assert group.processes == [process]
     process.close.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "error", [OSError("private process detail"), KeyboardInterrupt()]
+)
+def test_interrupted_join_retains_schema_and_process_handle(error):
+    group, process = group_with_process()
+    process.join.side_effect = error
+    with pytest.raises(BenchmarkFailure, match="worker_cleanup_failed") as caught:
+        group.stop()
+    assert caught.value.retained_schema == SCHEMA
+    assert group.processes == [process]
+    process.close.assert_not_called()
+    assert "private process detail" not in str(caught.value)
