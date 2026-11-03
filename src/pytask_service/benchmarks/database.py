@@ -36,7 +36,13 @@ class BenchmarkDatabase:
 
     def close(self, *, retain: bool = False) -> None:
         if self.engine is not None:
-            self.engine.dispose()
+            try:
+                self.engine.dispose()
+            except BaseException:
+                raise BenchmarkFailure(
+                    "schema_cleanup_failed",
+                    retained_schema=self.schema if self._created else None,
+                ) from None
         if self._created and not retain:
             try:
                 with self.admin.begin() as connection:

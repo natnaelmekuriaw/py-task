@@ -40,3 +40,16 @@ def test_successful_cleanup_is_idempotent():
     database.close()
     database.close()
     admin.begin.assert_called_once()
+
+
+@pytest.mark.parametrize("error", [OSError("private detail"), KeyboardInterrupt()])
+def test_dispose_failure_retains_schema_without_attempting_ddl(error):
+    admin, engine = MagicMock(), MagicMock()
+    database = BenchmarkDatabase(admin, Settings("unused"))
+    database.engine, database._created = engine, True
+    engine.dispose.side_effect = error
+    with pytest.raises(BenchmarkFailure, match="schema_cleanup_failed") as caught:
+        database.close()
+    assert caught.value.retained_schema == database.schema
+    admin.begin.assert_not_called()
+    assert "private detail" not in str(caught.value)
